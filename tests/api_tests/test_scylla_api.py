@@ -11,11 +11,11 @@ def scylla_api_obj(api_server):
 
 
 def test_number_of_scylla_api_modules(scylla_api_obj):
-    assert len(scylla_api_obj.modules) == 3
+    assert len(scylla_api_obj.modules) == 4
 
 
 def test_module_names(scylla_api_obj):
-    module_names = ["system", "compaction_manager", "error_injection"]
+    module_names = ["system", "compaction_manager", "error_injection", "v2"]
 
     for module, expected_name in zip(scylla_api_obj.modules, module_names):
         assert module == expected_name

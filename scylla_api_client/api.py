@@ -7,6 +7,7 @@ import re
 import json
 from argparse import ArgumentParser
 from pprint import PrettyPrinter
+import json
 
 from .rest.scylla_rest_client import ScyllaRestClient
 
@@ -387,13 +388,43 @@ class ScyllaApi:
             return
         for module_def in top_json["apis"]:
             # FIXME: handle service down, errors
-            module_json = self.client.get_raw_api_json(f"{module_def['path']}/")
+            module_json = self.client.get_raw_api_json(f"/api-doc{module_def['path']}/")
             module_path = module_def['path'].strip(' /')
             module = ScyllaApiModule(module_path, module_def['description'])
             for command_json in module_json["apis"]:
                 command_path = command_json['path'].strip(' /')
                 if command_path.startswith(module_path):
                     command_path = command_path[len(module_path)+1:]
+                command = ScyllaApiCommand(module_name=module_path,
+                                           command_name=command_path,
+                                           host=self._host,
+                                           port=self._port)
+                command.load_json(command_json)
+                module.add_command(command)
+            self.add_module(module)
+        for module_def in [json.loads('{ "path": "/v2", "description": "V2 API"}')]:
+            module_json = self.client.get_raw_api_json(module_def['path'])["paths"]
+            module_path = module_def['path'].strip(' /')
+            module = ScyllaApiModule(module_path, module_def['description'])
+            for command_path in module_json:
+                operations = []
+                for op, v2_meta in module_json[command_path].items():
+                    if op.upper() not in ["GET", "POST", "DELETE"]:
+                        continue
+                    operation = { "method": op }
+                    kw_trans = { "description": "summary", "produces": "produces", "parameters": "parameters"}
+                    for v2_kw, v1_kw in kw_trans.items():
+                        if v2_kw in v2_meta:
+                            operation[v1_kw] = v2_meta[v2_kw]
+                    operations.append(operation)
+                    if "produces" in v2_meta:
+                        operation["produces"] = v2_meta["produces"]
+                command_path = command_path.strip(' /')
+                if command_path.startswith(module_path):
+                    command_path = command_path[len(module_path)+1:]
+                json_str = f'{{"path": "{command_path}", "operations": {json.dumps(operations)} }}'
+                command_json = json.loads(json_str)
+                log.debug(f"{module_path} {command_path}: {command_json}")
                 command = ScyllaApiCommand(module_name=module_path,
                                            command_name=command_path,
                                            host=self._host,

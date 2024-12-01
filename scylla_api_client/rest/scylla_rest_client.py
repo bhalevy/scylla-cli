@@ -9,8 +9,8 @@ class ScyllaRestClient(RestClient):
     def __init__(self, host: str = "localhost", port: str = "10000"):
         super().__init__(host=host, port=port)
 
-    def get_raw_api_json(self, resource_path: str = ""):
-        if api := self.get(f"/api-doc{resource_path}"):
+    def get_raw_api_json(self, resource_path: str = "/api-doc"):
+        if api := self.get(resource_path):
             return api.json()
         return None
 

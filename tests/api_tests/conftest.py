@@ -22,6 +22,8 @@ class ScyllaAPIBasicRequestHandler(BaseHTTPRequestHandler):
             content = json.dumps(self.error_injection()).encode(encoding="utf-8")
         elif self.path == "/api-doc/compaction_manager/":
             content = json.dumps(self.compaction_manager()).encode(encoding="utf-8")
+        elif self.path == "/v2":
+            content = json.dumps(self.v2()).encode(encoding="utf-8")
         else:
             content = json.dumps(f"""{{"URL": "{self.command}", "method": "{self.path}"}}""").encode(encoding="utf-8")
 
@@ -608,6 +610,204 @@ class ScyllaAPIBasicRequestHandler(BaseHTTPRequestHandler):
       }
    }
 }""")
+
+    def v2(self):
+        json_resp = json.loads("""{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Scylla API",
+    "description": "The scylla API version 2.0",
+    "termsOfService": "http://www.scylladb.com/tos/",
+    "contact": {
+      "name": "Scylla Team",
+      "email": "info@scylladb.com",
+      "url": "http://scylladb.com"
+    },
+    "license": {
+      "name": "AGPL",
+      "url": "https://github.com/scylladb/scylla/blob/master/LICENSE.AGPL"
+    }
+  },
+  "host": "localhost:10000",
+  "basePath": "/",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v2/metrics-config/":{
+        "get":{
+            "description":"Return the metrics layer configuration",
+            "operationId":"get_metrics_config",
+            "produces":[
+                "application/json"
+            ],
+            "tags":[
+                "metrics"
+            ],
+            "parameters":[
+            ],
+            "responses":{
+                "200":{
+                "schema": {
+                    "type":"array",
+                    "items":{
+                        "$ref":"#/definitions/metrics_config",
+                        "description":"metrics Config value"
+                    }
+                    }
+                },
+                "default":{
+                    "description":"unexpected error",
+                    "schema":{
+                        "$ref":"#/definitions/ErrorModel"
+                    }
+                }
+            }
+        },
+        "post": {
+             "description":"Set the metrics layer relabel configuration",
+            "operationId":"set_metrics_config",
+            "produces":[
+                "application/json"
+            ],
+            "tags":[
+                "metrics"
+            ],
+            "parameters":[
+               {
+                "in":"body",
+                "name":"conf",
+                "description":"An array of relabel_config objects",
+                "schema": {
+                    "type":"array",
+                    "items":{
+                        "$ref":"#/definitions/metrics_config",
+                        "description":"metrics Config value"
+                    }
+                }
+               }
+            ],
+            "responses":{
+                "200":{
+                    "description": "OK"
+                },
+                "default":{
+                    "description":"unexpected error",
+                    "schema":{
+                        "$ref":"#/definitions/ErrorModel"
+                    }
+                }
+            }
+        }
+    },
+    "/v2/config/background_writer_scheduling_quota": {
+      "get": {
+        "description": "max cpu usage ratio (between 0 and 1) for compaction process. Not intended for setting in normal operations. Setting it to 1 or higher will disable it, recommended operational setting is 0.5.",
+        "operationId": "find_config_background_writer_scheduling_quota",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "config"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Config value",
+            "schema": {
+              "type": "double"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/ErrorModel"
+            }
+          }
+        }
+      }
+    },
+    "/v2/config/log_to_syslog": {
+      "get": {
+        "description": "Send log output to syslog",
+        "operationId": "find_config_log_to_syslog",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "config"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Config value",
+            "schema": {
+              "type": "bool"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/ErrorModel"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "metrics_config": {
+      "id": "metrics_config",
+      "summary": "An entry in the metrics configuration",
+      "properties": {
+        "source_labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The source labels, a match is based on concatenation of the labels"
+        },
+        "action": {
+          "type": "string",
+          "description": "The action to perform on match",
+          "enum": [
+            "skip_when_empty",
+            "report_when_empty",
+            "replace",
+            "keep",
+            "drop",
+            "drop_label"
+          ]
+        },
+        "target_label": {
+          "type": "string",
+          "description": "The application state version"
+        },
+        "replacement": {
+          "type": "string",
+          "description": "The replacement string to use when replacing a value"
+        },
+        "regex": {
+          "type": "string",
+          "description": "The regex string to use when replacing a value"
+        },
+        "separator": {
+          "type": "string",
+          "description": "The separator string to use when concatenating the labels"
+        }
+      }
+    }
+  }
+}"""
+        )
+        return json_resp
 
 
 class ScyllaApiServer:
