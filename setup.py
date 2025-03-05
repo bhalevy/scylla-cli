@@ -13,7 +13,7 @@ setup(
     author='ScyllaDB',
     packages=find_packages(),
     include_package_data=True,
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     install_requires=['requests'],
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
